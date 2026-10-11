@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3">{{ opp.title }} {% if opp.is_urgent %}<span class="badge bg-danger">Urgent</span>{% endif %}</h1>
+<p class="text-muted">Hosted by {{ opp.host.name }}</p>
+<p>{{ opp.description }}</p>
+<ul>
+  <li>Where: {{ opp.location }}</li>
+  <li>When: {{ opp.start_time.strftime("%a %b %d, %I:%M %p") }} to {{ opp.end_time.strftime("%I:%M %p") }}</li>
+  <li>Spots: {{ opp.signups|length }}/{{ opp.spots_needed }} filled</li>
+</ul>
+
+{% if current_user.is_authenticated and current_user.id == opp.host_id %}
+  <h2 class="h5 mt-4">Check-in QR code</h2>
+  <p>Show this at the event. Volunteers scan it with their phone camera when they arrive and when they leave.</p>
+  <img src="{{ url_for('opportunities.qr_image', opp_id=opp.id) }}" alt="Check-in QR code" width="240" height="240">
+{% elif current_user.is_authenticated and not current_user.is_host %}
+  <form method="post" action="{{ url_for('opportunities.signup', opp_id=opp.id) }}">
+    <button class="btn btn-primary">Sign up</button>
+  </form>
+{% elif not current_user.is_authenticated %}
+  <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Log in to sign up</a>
+{% endif %}
+{% endblock %}

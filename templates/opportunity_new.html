@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Post an opportunity</h1>
+<form method="post" class="col-md-6">
+  <div class="mb-3"><label class="form-label">Title</label><input class="form-control" name="title" required></div>
+  <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" name="description" rows="4" required></textarea></div>
+  <div class="mb-3"><label class="form-label">Location</label><input class="form-control" name="location" required></div>
+  <div class="row">
+    <div class="col mb-3"><label class="form-label">Starts</label><input class="form-control" type="datetime-local" name="start_time" required></div>
+    <div class="col mb-3"><label class="form-label">Ends</label><input class="form-control" type="datetime-local" name="end_time" required></div>
+  </div>
+  <div class="mb-3"><label class="form-label">Volunteers needed</label><input class="form-control" type="number" min="1" name="spots_needed" value="1" required></div>
+  <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="is_urgent" id="urgent"><label class="form-check-label" for="urgent">Urgent (needs help soon)</label></div>
+  <button class="btn btn-primary">Post</button>
+</form>
+{% endblock %}

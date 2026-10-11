@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Create an account</h1>
+<form method="post" class="col-md-5">
+  <div class="mb-3"><label class="form-label">Name</label><input class="form-control" name="name" required></div>
+  <div class="mb-3"><label class="form-label">Email</label><input class="form-control" type="email" name="email" required></div>
+  <div class="mb-3"><label class="form-label">Password</label><input class="form-control" type="password" name="password" required></div>
+  <div class="mb-3"><label class="form-label">Birthdate</label><input class="form-control" type="date" name="birthdate"></div>
+  <div class="mb-3">
+    <label class="form-label">I am a</label>
+    <select class="form-select" name="role">
+      <option value="volunteer">Volunteer</option>
+      <option value="host">Host (organization or event organizer)</option>
+    </select>
+  </div>
+  <button class="btn btn-primary">Sign up</button>
+</form>
+{% endblock %}

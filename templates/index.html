@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3 mb-3">Upcoming opportunities</h1>
+
+{% for opp in opportunities %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h2 class="h5">
+        <a href="{{ url_for('opportunities.detail', opp_id=opp.id) }}">{{ opp.title }}</a>
+        {% if opp.is_urgent %}<span class="badge bg-danger">Urgent</span>{% endif %}
+      </h2>
+      <p class="mb-1">{{ opp.location }}</p>
+      <p class="text-muted mb-0">{{ opp.start_time.strftime("%a %b %d, %I:%M %p") }} &middot; {{ opp.signups|length }}/{{ opp.spots_needed }} spots filled</p>
+    </div>
+  </div>
+{% else %}
+  <p>No upcoming opportunities yet.</p>
+{% endfor %}
+{% endblock %}

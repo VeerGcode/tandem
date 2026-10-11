@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3 mb-1">My hours</h1>
+<p class="lead">Approved total: {{ "%.1f"|format(current_user.total_hours()) }} hours</p>
+
+<table class="table">
+  <thead><tr><th>Event</th><th>Date</th><th>Status</th><th>Hours</th></tr></thead>
+  <tbody>
+  {% for r in requests %}
+    <tr>
+      <td>{{ r.opportunity.title }}</td>
+      <td>{{ r.checked_in_at.strftime("%b %d, %Y") }}</td>
+      <td>{{ r.status|capitalize }}</td>
+      <td>{{ r.hours if r.status == "approved" else "-" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4">No hours yet. Scan the QR code at an event to submit your hours.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<!-- TODO: add a CSV / PDF export button -->
+{% endblock %}
