@@ -25,7 +25,10 @@ def index():
 @opps_bp.route("/opportunities/<int:opp_id>")
 def detail(opp_id):
     opp = db.get_or_404(Opportunity, opp_id)
-    return render_template("opportunity_detail.html", opp=opp)
+    is_signed_up = current_user.is_authenticated and any(
+        s.user_id == current_user.id for s in opp.signups
+    )
+    return render_template("opportunity_detail.html", opp=opp, is_signed_up=is_signed_up)
 
 
 @opps_bp.route("/opportunities/new", methods=["GET", "POST"])
@@ -46,7 +49,9 @@ def new():
             is_urgent="is_urgent" in request.form,
             host_id=current_user.id,
         )
-        # TODO: check that end_time is after start_time
+        if opp.start_time >= opp.end_time:
+            flash("Start time must be before end time.")
+            return render_template("opportunity_new.html", opp=opp)
         db.session.add(opp)
         db.session.commit()
         return redirect(url_for("opportunities.detail", opp_id=opp.id))
@@ -58,12 +63,28 @@ def new():
 @login_required
 def signup(opp_id):
     opp = db.get_or_404(Opportunity, opp_id)
-    # TODO: 1. Block hosts from signing up
-    # TODO: 2. Block duplicate signups (Signup has a unique constraint on user + opportunity)
-    # TODO: 3. Block signups when the event is full (len(opp.signups) >= opp.spots_needed)
-    # TODO: 4. If current_user.is_minor, require a parent_consent checkbox
-    # TODO: 5. Create the Signup, commit, and flash a confirmation
-    flash("Sign-up is not built yet.")
+    if current_user.is_host:
+        flash("Hosts cannot sign up for events.")
+        return redirect(url_for("opportunities.detail", opp_id=opp.id))
+    if any(s.user_id == current_user.id for s in opp.signups):
+        flash("You are already signed up for this event.")
+        return redirect(url_for("opportunities.detail", opp_id=opp.id))
+    if len(opp.signups) >= opp.spots_needed:
+        flash("This event is already full.")
+        return redirect(url_for("opportunities.detail", opp_id=opp.id))
+    if opp.end_time < datetime.now():
+        flash("This event has already ended.")
+        return redirect(url_for("opportunities.detail", opp_id=opp.id))
+
+    consent = "parent_consent" in request.form
+    if current_user.is_minor and not consent:
+        flash("Because you're under 18, a parent or guardian must approve this sign-up.")
+        return redirect(url_for("opportunities.detail", opp_id=opp.id))
+
+    new_signup = Signup(user_id=current_user.id, opportunity_id=opp.id, parent_consent=consent)
+    db.session.add(new_signup)
+    db.session.commit()
+    flash("You're signed up!")
     return redirect(url_for("opportunities.detail", opp_id=opp.id))
 
 
