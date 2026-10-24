@@ -4,14 +4,13 @@
 
 <h2 class="h5">Hours waiting for approval</h2>
 <table class="table">
-  <thead><tr><th>Volunteer</th><th>Event</th><th>In</th><th>Out</th><th>Hours</th><th></th></tr></thead>
+  <thead><tr><th>Volunteer</th><th>Event</th><th>Scanned at</th><th>Hours</th><th></th></tr></thead>
   <tbody>
   {% for r in pending %}
     <tr>
       <td>{{ r.user.name }}</td>
       <td>{{ r.opportunity.title }}</td>
-      <td>{{ r.checked_in_at.strftime("%I:%M %p") }}</td>
-      <td>{{ r.checked_out_at.strftime("%I:%M %p") if r.checked_out_at else "Not yet" }}</td>
+      <td>{{ r.checked_in_at.strftime("%b %d, %I:%M %p") }}</td>
       <td><input form="req-{{ r.id }}" class="form-control form-control-sm" type="number" step="0.25" min="0" name="hours" value="{{ r.opportunity.shift_hours }}" style="width:90px"></td>
       <td class="text-nowrap">
         <form id="req-{{ r.id }}" method="post" action="{{ url_for('hours.approve', req_id=r.id) }}" class="d-inline">
@@ -21,7 +20,7 @@
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="6">Nothing waiting for approval.</td></tr>
+    <tr><td colspan="5">Nothing waiting for approval.</td></tr>
   {% endfor %}
   </tbody>
 </table>

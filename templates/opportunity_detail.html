@@ -11,12 +11,22 @@
 
 {% if current_user.is_authenticated and current_user.id == opp.host_id %}
   <h2 class="h5 mt-4">Check-in QR code</h2>
-  <p>Show this at the event. Volunteers scan it with their phone camera when they arrive and when they leave.</p>
+  <p>Show this at the event. Volunteers scan it with the Scan tab when they leave.</p>
   <img src="{{ url_for('opportunities.qr_image', opp_id=opp.id) }}" alt="Check-in QR code" width="240" height="240">
 {% elif current_user.is_authenticated and not current_user.is_host %}
-  <form method="post" action="{{ url_for('opportunities.signup', opp_id=opp.id) }}">
-    <button class="btn btn-primary">Sign up</button>
-  </form>
+  {% if is_signed_up %}
+    <p class="text-success">You're signed up for this event.</p>
+  {% else %}
+    <form method="post" action="{{ url_for('opportunities.signup', opp_id=opp.id) }}">
+      {% if current_user.is_minor %}
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="parent_consent" id="consent" required>
+          <label class="form-check-label" for="consent">A parent or guardian has approved that I volunteer at this event.</label>
+        </div>
+      {% endif %}
+      <button class="btn btn-primary">Sign up</button>
+    </form>
+  {% endif %}
 {% elif not current_user.is_authenticated %}
   <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Log in to sign up</a>
 {% endif %}

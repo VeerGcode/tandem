@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+<h1 class="h3 mb-2">Submit your hours</h1>
+<p>When you're leaving the event, scan the host's QR code.</p>
+
+<div id="reader" style="max-width: 400px;"></div>
+<p id="status" class="text-muted mt-2"></p>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+  const status = document.getElementById("status");
+  const scanner = new Html5Qrcode("reader");
+  const scanBase = "{{ url_for('hours.scan_page') }}/";
+  let handled = false;
+
+  function onScan(text) {
+    if (handled) return;
+    let token = null;
+    try {
+      // The QR code holds a link ending in /scan/<token>. Only the token is used.
+      const parts = new URL(text).pathname.split("/").filter(Boolean);
+      if (parts.length >= 2 && parts[parts.length - 2] === "scan") {
+        token = parts[parts.length - 1];
+      }
+    } catch (e) {}
+
+    if (!token) {
+      status.textContent = "That isn't an event QR code from this app.";
+      return;
+    }
+    handled = true;
+    scanner.stop().finally(() => {
+      window.location.href = scanBase + encodeURIComponent(token);
+    });
+  }
+
+  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScan)
+    .catch(() => {
+      status.textContent = "Couldn't open the camera. Allow camera access, or scan with your phone's camera app.";
+    });
+</script>
+{% endblock %}

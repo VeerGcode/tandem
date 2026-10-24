@@ -9,13 +9,20 @@ from models import HourRequest, Opportunity
 hours_bp = Blueprint("hours", __name__)
 
 
+@hours_bp.route("/scan")
+@login_required
+def scan_page():
+    """The Scan tab: opens the camera and reads the event QR code."""
+    if current_user.is_host:
+        flash("Host accounts don't scan. Show your event's QR code instead.")
+        return redirect(url_for("hours.host_dashboard"))
+    return render_template("scan.html")
+
+
 @hours_bp.route("/scan/<token>")
 @login_required
 def scan(token):
-    """
-    Opened when a volunteer scans the QR code with their phone camera.
-    First scan = check-in, second scan = check-out, third = already submitted.
-    """
+    """One scan when leaving the event creates a pending hours request."""
     opp = Opportunity.query.filter_by(qr_token=token).first_or_404()
 
     if current_user.is_host:
@@ -23,35 +30,26 @@ def scan(token):
         return redirect(url_for("opportunities.detail", opp_id=opp.id))
 
     if not any(s.user_id == current_user.id for s in opp.signups):
-        flash("Sign up for this event before checking in.")
+        flash("Sign up for this event before submitting hours.")
         return redirect(url_for("opportunities.detail", opp_id=opp.id))
 
-    # Scans only work from 30 minutes before the start to 2 hours after the end
+    # Scans work from the event start until 2 hours after it ends
     now = datetime.now()
-    if now < opp.start_time - timedelta(minutes=30) or now > opp.end_time + timedelta(hours=2):
-        flash("Check-in isn't open for this event right now.")
+    if now < opp.start_time or now > opp.end_time + timedelta(hours=2):
+        flash("Hours can only be submitted during the event or shortly after it ends.")
         return redirect(url_for("opportunities.detail", opp_id=opp.id))
 
-    hour_request = HourRequest.query.filter_by(
+    existing = HourRequest.query.filter_by(
         user_id=current_user.id, opportunity_id=opp.id
     ).first()
-
-    if hour_request is None:
-        # First scan: check in
-        new_request = HourRequest(
-            user_id=current_user.id, opportunity_id=opp.id, checked_in_at=now
-        )
-        db.session.add(new_request)
-        db.session.commit()
-        flash("Checked in! Scan the code again when you leave.")
-    elif hour_request.checked_out_at is None:
-        # Second scan: check out
-        hour_request.checked_out_at = now
-        db.session.commit()
-        flash("Checked out! Your host will review your hours.")
-    else:
+    if existing:
         flash("You've already submitted hours for this event.")
+        return redirect(url_for("hours.my_hours"))
 
+    # checked_in_at now simply records when the scan happened
+    db.session.add(HourRequest(user_id=current_user.id, opportunity_id=opp.id, checked_in_at=now))
+    db.session.commit()
+    flash("Hours submitted! Your host will review them.")
     return redirect(url_for("hours.my_hours"))
 
 
