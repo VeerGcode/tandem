@@ -1,19 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="h3 mb-3">Upcoming opportunities</h1>
+<div class="page-head text-center">
+  <h1>Where can you help?</h1>
+  <p class="text-muted">Sign up, show up, then scan the host's QR code on your way out to get your hours verified.</p>
+</div>
+
+<form method="get" class="search-box mb-4">
+  <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="Search by title, place, or description" aria-label="Search opportunities">
+  <div class="form-check mb-0 text-nowrap">
+    <input class="form-check-input" type="checkbox" name="urgent" value="1" id="urgent-only" {% if urgent_only %}checked{% endif %}>
+    <label class="form-check-label" for="urgent-only">Urgent only</label>
+  </div>
+  <button class="btn btn-primary">Search</button>
+  {% if q or urgent_only %}<a class="btn btn-link" href="{{ url_for('opportunities.index') }}">Clear</a>{% endif %}
+</form>
 
 {% for opp in opportunities %}
-  <div class="card mb-3">
+  <a class="card opp-card mb-3 text-decoration-none" href="{{ url_for('opportunities.detail', opp_id=opp.id) }}">
     <div class="card-body">
-      <h2 class="h5">
-        <a href="{{ url_for('opportunities.detail', opp_id=opp.id) }}">{{ opp.title }}</a>
-        {% if opp.is_urgent %}<span class="badge bg-danger">Urgent</span>{% endif %}
-      </h2>
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <h2 class="h5 mb-1">{{ opp.title }}</h2>
+        <div class="text-nowrap">
+          {% if opp.id in signed_up_ids %}<span class="badge bg-success">Signed up</span>{% endif %}
+          {% if opp.is_urgent %}<span class="badge bg-danger">Urgent</span>{% endif %}
+        </div>
+      </div>
       <p class="mb-1">{{ opp.location }}</p>
-      <p class="text-muted mb-0">{{ opp.start_time.strftime("%a %b %d, %I:%M %p") }} &middot; {{ opp.signups|length }}/{{ opp.spots_needed }} spots filled</p>
+      <p class="text-muted mb-0">{{ opp.start_time.strftime("%a %b %d, %I:%M %p") }} &middot; {{ opp.signups|length }} of {{ opp.spots_needed }} spots filled</p>
     </div>
-  </div>
+  </a>
 {% else %}
-  <p>No upcoming opportunities yet.</p>
-{% endfor %}
-{% endblock %}
+  {% if q or urgent_only %}
+    <p class="text-center

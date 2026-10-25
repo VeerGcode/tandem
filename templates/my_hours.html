@@ -1,22 +1,39 @@
 {% extends "base.html" %}
+{% block title %}My hours{% endblock %}
 {% block content %}
-<h1 class="h3 mb-1">My hours</h1>
-<p class="lead">Approved total: {{ "%.1f"|format(current_user.total_hours()) }} hours</p>
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="h3 mb-1">My hours</h1>
+    <p class="lead mb-0">{{ "%.1f"|format(current_user.total_hours()) }} approved hours</p>
+  </div>
+  <a class="btn btn-outline-primary" href="{{ url_for('hours.export_hours') }}">Download CSV</a>
+</div>
 
-<table class="table">
+<form method="get" class="search-box mb-4">
+  <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="Search by event, place, or status (pending, approved)" aria-label="Search my hours">
+  <button class="btn btn-primary">Search</button>
+  {% if q %}<a class="btn btn-link" href="{{ url_for('hours.my_hours') }}">Clear</a>{% endif %}
+</form>
+
+<div class="table-responsive">
+<table class="table align-middle mb-0">
   <thead><tr><th>Event</th><th>Date</th><th>Status</th><th>Hours</th></tr></thead>
   <tbody>
   {% for r in requests %}
     <tr>
       <td>{{ r.opportunity.title }}</td>
-      <td>{{ r.checked_in_at.strftime("%b %d, %Y") }}</td>
-      <td>{{ r.status|capitalize }}</td>
-      <td>{{ r.hours if r.status == "approved" else "-" }}</td>
+      <td>{{ r.opportunity.start_time.strftime("%b %d, %Y") }}</td>
+      <td>
+        {% if r.status == "approved" %}<span class="badge bg-success">Approved</span>
+        {% elif r.status == "denied" %}<span class="badge bg-secondary">Denied</span>
+        {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+      </td>
+      <td>{{ ("%g"|format(r.hours)) if r.status == "approved" else "-" }}</td>
     </tr>
   {% else %}
-    <tr><td colspan="4">No hours yet. Scan the QR code at an event to submit your hours.</td></tr>
+    <tr><td colspan="4">{% if q %}No hours match your search.{% else %}No hours yet. When you leave an event, open the Scan tab and scan the host's QR code.{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>
-<!-- TODO: add a CSV / PDF export button -->
+</div>
 {% endblock %}

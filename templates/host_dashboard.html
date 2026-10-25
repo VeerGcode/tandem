@@ -1,34 +1,59 @@
 {% extends "base.html" %}
+{% block title %}Host dashboard{% endblock %}
 {% block content %}
-<h1 class="h3 mb-3">Host dashboard</h1>
+<h1 class="h3 mb-4">Host dashboard</h1>
 
-<h2 class="h5">Hours waiting for approval</h2>
-<table class="table">
-  <thead><tr><th>Volunteer</th><th>Event</th><th>Scanned at</th><th>Hours</th><th></th></tr></thead>
-  <tbody>
-  {% for r in pending %}
-    <tr>
-      <td>{{ r.user.name }}</td>
-      <td>{{ r.opportunity.title }}</td>
-      <td>{{ r.checked_in_at.strftime("%b %d, %I:%M %p") }}</td>
-      <td><input form="req-{{ r.id }}" class="form-control form-control-sm" type="number" step="0.25" min="0" name="hours" value="{{ r.opportunity.shift_hours }}" style="width:90px"></td>
-      <td class="text-nowrap">
-        <form id="req-{{ r.id }}" method="post" action="{{ url_for('hours.approve', req_id=r.id) }}" class="d-inline">
-          <button class="btn btn-sm btn-success">Approve</button>
-          <button class="btn btn-sm btn-outline-danger" formaction="{{ url_for('hours.deny', req_id=r.id) }}">Deny</button>
-        </form>
-      </td>
-    </tr>
-  {% else %}
-    <tr><td colspan="5">Nothing waiting for approval.</td></tr>
+<h2 class="h5 mb-3">Hours waiting for approval</h2>
+{% for r in pending %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between flex-wrap gap-1 mb-3">
+        <div>
+          <div class="fw-semibold">{{ r.user.name }}</div>
+          <div class="text-muted">{{ r.opportunity.title }}</div>
+        </div>
+        <div class="text-muted small">Scanned {{ r.checked_in_at.strftime("%b %d, %I:%M %p") }}</div>
+      </div>
+      <form method="post" action="{{ url_for('hours.approve', req_id=r.id) }}" class="approve-form">
+        <div class="hours-field">
+          <label class="form-label mb-1 small" for="hours-{{ r.id }}">Hours</label>
+          <input id="hours-{{ r.id }}" class="form-control form-control-sm" type="number" step="0.25" min="0" max="24" name="hours" value="{{ r.opportunity.shift_hours }}">
+        </div>
+        <button class="btn btn-success">Approve</button>
+        <button class="btn btn-outline-danger" formaction="{{ url_for('hours.deny', req_id=r.id) }}">Deny</button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <p class="text-muted">Nothing waiting for approval.</p>
+{% endfor %}
+
+{% if reviewed %}
+<h2 class="h5 mt-5 mb-3">Recently reviewed</h2>
+<div class="list-panel">
+  {% for r in reviewed %}
+    <div class="list-row">
+      <div>
+        <div class="fw-semibold">{{ r.user.name }}</div>
+        <div class="text-muted small">{{ r.opportunity.title }}</div>
+      </div>
+      <div class="text-end text-nowrap">
+        {% if r.status == "approved" %}
+          <span class="badge bg-success">Approved</span>
+          <div class="small text-muted mt-1">{{ "%g"|format(r.hours) }} hours</div>
+        {% else %}
+          <span class="badge bg-secondary">Denied</span>
+        {% endif %}
+      </div>
+    </div>
   {% endfor %}
-  </tbody>
-</table>
+</div>
+{% endif %}
 
-<h2 class="h5 mt-4">Your events</h2>
+<h2 class="h5 mt-5 mb-3">Your events</h2>
 <ul>
   {% for opp in my_opps %}
-    <li><a href="{{ url_for('opportunities.detail', opp_id=opp.id) }}">{{ opp.title }}</a> ({{ opp.start_time.strftime("%b %d") }})</li>
+    <li><a href="{{ url_for('opportunities.detail', opp_id=opp.id) }}">{{ opp.title }}</a> ({{ opp.start_time.strftime("%b %d") }}, {{ opp.signups|length }} of {{ opp.spots_needed }} signed up)</li>
   {% else %}
     <li>You haven't posted any events yet.</li>
   {% endfor %}

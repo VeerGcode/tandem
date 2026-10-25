@@ -1,4 +1,4 @@
-# Volunteer App
+# Tandem App
 
 Verified service hours. Hosts post events, volunteers scan a QR code, and hosts approve the hours.
 

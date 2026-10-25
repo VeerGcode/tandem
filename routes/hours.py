@@ -1,10 +1,13 @@
-from datetime import datetime, timedelta
+import csv
+import io
+from datetime import timedelta
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from extensions import db
 from models import HourRequest, Opportunity
+from utils import local_now
 
 hours_bp = Blueprint("hours", __name__)
 
@@ -34,7 +37,7 @@ def scan(token):
         return redirect(url_for("opportunities.detail", opp_id=opp.id))
 
     # Scans work from the event start until 2 hours after it ends
-    now = datetime.now()
+    now = local_now()
     if now < opp.start_time or now > opp.end_time + timedelta(hours=2):
         flash("Hours can only be submitted during the event or shortly after it ends.")
         return redirect(url_for("opportunities.detail", opp_id=opp.id))
@@ -46,7 +49,7 @@ def scan(token):
         flash("You've already submitted hours for this event.")
         return redirect(url_for("hours.my_hours"))
 
-    # checked_in_at now simply records when the scan happened
+    # checked_in_at simply records when the scan happened
     db.session.add(HourRequest(user_id=current_user.id, opportunity_id=opp.id, checked_in_at=now))
     db.session.commit()
     flash("Hours submitted! Your host will review them.")
@@ -56,12 +59,56 @@ def scan(token):
 @hours_bp.route("/my-hours")
 @login_required
 def my_hours():
-    requests = (
-        HourRequest.query.filter_by(user_id=current_user.id)
-        .order_by(HourRequest.checked_in_at.desc())
+    q = request.args.get("q", "").strip()
+    query = HourRequest.query.join(Opportunity).filter(HourRequest.user_id == current_user.id)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(db.or_(
+            Opportunity.title.ilike(like),
+            Opportunity.location.ilike(like),
+            HourRequest.status.ilike(like),
+        ))
+    requests = query.order_by(HourRequest.checked_in_at.desc()).all()
+    return render_template("my_hours.html", requests=requests, q=q)
+
+
+def _safe_cell(value):
+    """Stops spreadsheet programs from running event titles that start with = + - @ as formulas."""
+    text = str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
+
+
+@hours_bp.route("/my-hours/export.csv")
+@login_required
+def export_hours():
+    approved = (
+        HourRequest.query.filter_by(user_id=current_user.id, status="approved")
+        .order_by(HourRequest.checked_in_at)
         .all()
     )
-    return render_template("my_hours.html", requests=requests)
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Volunteer", _safe_cell(current_user.name)])
+    writer.writerow([])
+    writer.writerow(["Date", "Event", "Host", "Location", "Hours", "Approved on"])
+    total = 0
+    for r in approved:
+        total += r.hours or 0
+        writer.writerow([
+            r.opportunity.start_time.strftime("%Y-%m-%d"),
+            _safe_cell(r.opportunity.title),
+            _safe_cell(r.opportunity.host.name),
+            _safe_cell(r.opportunity.location),
+            f"{r.hours:g}",
+            r.reviewed_at.strftime("%Y-%m-%d") if r.reviewed_at else "",
+        ])
+    writer.writerow([])
+    writer.writerow(["Total approved hours", "", "", "", f"{total:g}", ""])
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=tandem-hours.csv"},
+    )
 
 
 @hours_bp.route("/host/dashboard")
@@ -70,11 +117,12 @@ def host_dashboard():
     if not current_user.is_host:
         abort(403)
 
-    # Pending requests for events that belong to this host
-    pending = (
-        HourRequest.query.join(Opportunity)
-        .filter(Opportunity.host_id == current_user.id, HourRequest.status == "pending")
-        .order_by(HourRequest.checked_in_at)
+    base = HourRequest.query.join(Opportunity).filter(Opportunity.host_id == current_user.id)
+    pending = base.filter(HourRequest.status == "pending").order_by(HourRequest.checked_in_at).all()
+    reviewed = (
+        base.filter(HourRequest.status != "pending")
+        .order_by(HourRequest.reviewed_at.desc())
+        .limit(10)
         .all()
     )
     my_opps = (
@@ -82,7 +130,7 @@ def host_dashboard():
         .order_by(Opportunity.start_time.desc())
         .all()
     )
-    return render_template("host_dashboard.html", pending=pending, my_opps=my_opps)
+    return render_template("host_dashboard.html", pending=pending, reviewed=reviewed, my_opps=my_opps)
 
 
 @hours_bp.route("/host/requests/<int:req_id>/approve", methods=["POST"])
@@ -109,7 +157,7 @@ def approve(req_id):
 
     hour_request.status = "approved"
     hour_request.hours = hours
-    hour_request.reviewed_at = datetime.now()
+    hour_request.reviewed_at = local_now()
     db.session.commit()
     flash(f"Approved {hours:g} hours for {hour_request.user.name}.")
     return redirect(url_for("hours.host_dashboard"))
@@ -128,7 +176,7 @@ def deny(req_id):
 
     hour_request.status = "denied"
     hour_request.host_note = request.form.get("host_note", "").strip() or None
-    hour_request.reviewed_at = datetime.now()
+    hour_request.reviewed_at = local_now()
     db.session.commit()
     flash(f"Denied the request from {hour_request.user.name}.")
     return redirect(url_for("hours.host_dashboard"))

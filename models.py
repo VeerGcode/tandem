@@ -73,7 +73,7 @@ class Signup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     opportunity_id = db.Column(db.Integer, db.ForeignKey("opportunity.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     parent_consent = db.Column(db.Boolean, default=False)  # needed when the user is a minor
 
     __table_args__ = (db.UniqueConstraint("user_id", "opportunity_id"),)
