@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-head text-center">
+  <p class="tagline">Better together</p>
   <h1>Where can you help?</h1>
   <p class="text-muted">Sign up, show up, then scan the host's QR code on your way out to get your hours verified.</p>
 </div>
@@ -31,4 +32,9 @@
   </a>
 {% else %}
   {% if q or urgent_only %}
-    <p class="text-center
+    <p class="text-center text-muted">No opportunities match your search.</p>
+  {% else %}
+    <p class="text-center text-muted">No upcoming opportunities yet.{% if current_user.is_authenticated and current_user.is_host %} <a href="{{ url_for('opportunities.new') }}">Post the first one.</a>{% endif %}</p>
+  {% endif %}
+{% endfor %}
+{% endblock %}
