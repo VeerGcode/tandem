@@ -6,7 +6,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, s
 from flask_login import current_user, login_required
 
 from extensions import db
-from models import Opportunity, Signup
+from models import Opportunity, Signup, User
 from utils import local_now
 
 opps_bp = Blueprint("opportunities", __name__)
@@ -16,6 +16,7 @@ opps_bp = Blueprint("opportunities", __name__)
 def index():
     q = request.args.get("q", "").strip()
     urgent_only = request.args.get("urgent") == "1"
+    verified_only = request.args.get("verified") == "1"
 
     # Events that have ended are hidden
     query = Opportunity.query.filter(Opportunity.end_time >= local_now())
@@ -28,6 +29,10 @@ def index():
         ))
     if urgent_only:
         query = query.filter(Opportunity.is_urgent.is_(True))
+    if verified_only:
+        query = query.join(User, Opportunity.host_id == User.id).filter(
+            User.verification_status == "verified"
+        )
 
     # Urgent first, then soonest
     opportunities = query.order_by(Opportunity.is_urgent.desc(), Opportunity.start_time).all()
@@ -41,6 +46,7 @@ def index():
         signed_up_ids=signed_up_ids,
         q=q,
         urgent_only=urgent_only,
+        verified_only=verified_only,
     )
 
 

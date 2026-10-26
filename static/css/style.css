@@ -141,3 +141,29 @@ a:focus-visible, button:focus-visible { outline: 3px solid rgba(201, 100, 66, 0.
   color: var(--accent);
   margin-bottom: 0.35rem;
 }
+
+
+/* Host dashboard: approval cards and the reviewed list (no wide tables, so phones don't scroll sideways) */
+.approve-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 0.75rem; }
+.hours-field { width: 100px; }
+@media (max-width: 480px) {
+  .approve-form .btn { flex: 1 1 40%; }
+}
+.list-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.list-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.85rem 1.1rem; }
+.list-row + .list-row { border-top: 1px solid var(--line); }
+
+/* Slogan above the home page heading */
+.tagline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.2rem;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+
+/* Verified host label on event cards */
+.verified-mark { color: var(--sage); font-weight: 500; }
+
+/* Verified tag, shown next to the Urgent tag */
+.badge-verified { background-color: #fff !important; color: var(--sage) !important; border: 1px solid var(--sage); }

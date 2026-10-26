@@ -1,21 +1,32 @@
 {% extends "base.html" %}
+{% block title %}{{ opp.title }}{% endblock %}
 {% block content %}
-<h1 class="h3">{{ opp.title }} {% if opp.is_urgent %}<span class="badge bg-danger">Urgent</span>{% endif %}</h1>
-<p class="text-muted">Hosted by {{ opp.host.name }}</p>
+<h1 class="h3">{{ opp.title }} {% if opp.is_urgent %}<span class="badge bg-danger align-middle">Urgent</span>{% endif %}</h1>
+<p class="text-muted">Hosted by {{ opp.host.org_name or opp.host.name }}{% if opp.host.is_verified_host %} <span class="badge badge-verified">&#10003; Verified</span>{% endif %}</p>
 <p>{{ opp.description }}</p>
 <ul>
   <li>Where: {{ opp.location }}</li>
   <li>When: {{ opp.start_time.strftime("%a %b %d, %I:%M %p") }} to {{ opp.end_time.strftime("%I:%M %p") }}</li>
-  <li>Spots: {{ opp.signups|length }}/{{ opp.spots_needed }} filled</li>
+  <li>Spots: {{ opp.signups|length }} of {{ opp.spots_needed }} filled</li>
 </ul>
 
 {% if current_user.is_authenticated and current_user.id == opp.host_id %}
   <h2 class="h5 mt-4">Check-in QR code</h2>
   <p>Show this at the event. Volunteers scan it with the Scan tab when they leave.</p>
-  <img src="{{ url_for('opportunities.qr_image', opp_id=opp.id) }}" alt="Check-in QR code" width="240" height="240">
+  <img class="qr" src="{{ url_for('opportunities.qr_image', opp_id=opp.id) }}" alt="QR code for submitting hours" width="240" height="240">
+
+  <h2 class="h5 mt-4">Signed-up volunteers</h2>
+  <ul>
+    {% for s in opp.signups %}
+      <li>{{ s.user.name }}{% if s.user.is_minor %} <span class="text-muted">(under 18, {% if s.parent_consent %}parent consent recorded{% else %}no consent recorded{% endif %})</span>{% endif %}</li>
+    {% else %}
+      <li>Nobody has signed up yet.</li>
+    {% endfor %}
+  </ul>
 {% elif current_user.is_authenticated and not current_user.is_host %}
   {% if is_signed_up %}
-    <p class="text-success">You're signed up for this event.</p>
+    <p class="text-success fw-semibold">You're signed up for this event.</p>
+    <p class="text-muted">When you leave, open the Scan tab and scan the host's QR code to submit your hours.</p>
   {% else %}
     <form method="post" action="{{ url_for('opportunities.signup', opp_id=opp.id) }}">
       {% if current_user.is_minor %}

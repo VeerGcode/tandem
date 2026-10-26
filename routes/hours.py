@@ -6,7 +6,7 @@ from flask import Blueprint, Response, abort, flash, redirect, render_template, 
 from flask_login import current_user, login_required
 
 from extensions import db
-from models import HourRequest, Opportunity
+from models import HourRequest, Opportunity, User
 from utils import local_now
 
 hours_bp = Blueprint("hours", __name__)
@@ -60,7 +60,14 @@ def scan(token):
 @login_required
 def my_hours():
     q = request.args.get("q", "").strip()
-    query = HourRequest.query.join(Opportunity).filter(HourRequest.user_id == current_user.id)
+    verified_only = request.args.get("verified") == "1"
+
+    query = HourRequest.query.join(Opportunity, HourRequest.opportunity_id == Opportunity.id)
+    query = query.filter(HourRequest.user_id == current_user.id)
+    if verified_only:
+        query = query.join(User, Opportunity.host_id == User.id).filter(
+            User.verification_status == "verified"
+        )
     if q:
         like = f"%{q}%"
         query = query.filter(db.or_(
@@ -69,7 +76,18 @@ def my_hours():
             HourRequest.status.ilike(like),
         ))
     requests = query.order_by(HourRequest.checked_in_at.desc()).all()
-    return render_template("my_hours.html", requests=requests, q=q)
+
+    # Totals always cover all of the volunteer's hours, not just the filtered list
+    approved = [r for r in current_user.hour_requests if r.status == "approved"]
+    verified_total = sum(r.hours or 0 for r in approved if r.opportunity.host.is_verified_host)
+
+    return render_template(
+        "my_hours.html",
+        requests=requests,
+        q=q,
+        verified_only=verified_only,
+        verified_total=verified_total,
+    )
 
 
 def _safe_cell(value):
@@ -90,20 +108,21 @@ def export_hours():
     writer = csv.writer(buffer)
     writer.writerow(["Volunteer", _safe_cell(current_user.name)])
     writer.writerow([])
-    writer.writerow(["Date", "Event", "Host", "Location", "Hours", "Approved on"])
+    writer.writerow(["Date", "Event", "Host", "Host verified", "Location", "Hours", "Approved on"])
     total = 0
     for r in approved:
         total += r.hours or 0
         writer.writerow([
             r.opportunity.start_time.strftime("%Y-%m-%d"),
             _safe_cell(r.opportunity.title),
-            _safe_cell(r.opportunity.host.name),
+            _safe_cell(r.opportunity.host.org_name or r.opportunity.host.name),
+            "Yes" if r.opportunity.host.is_verified_host else "No",
             _safe_cell(r.opportunity.location),
             f"{r.hours:g}",
             r.reviewed_at.strftime("%Y-%m-%d") if r.reviewed_at else "",
         ])
     writer.writerow([])
-    writer.writerow(["Total approved hours", "", "", "", f"{total:g}", ""])
+    writer.writerow(["Total approved hours", "", "", "", "", f"{total:g}", ""])
     return Response(
         buffer.getvalue(),
         mimetype="text/csv",

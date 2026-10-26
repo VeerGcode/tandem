@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Get verified{% endblock %}
+{% block content %}
+<h1 class="h3 mb-2">Get your organization verified</h1>
+<p class="text-muted mb-4">Verified hosts get a &#10003; Verified tag on their events, and volunteers can filter for them. You can post events without it, which matters when help is needed fast.</p>
+
+{% if current_user.verification_status == "pending" %}
+  <div class="alert alert-info">Your application for <strong>{{ current_user.org_name }}</strong> is under review. You can keep posting events in the meantime.</div>
+{% else %}
+  {% if current_user.verification_status == "rejected" %}
+    <div class="alert alert-info">Your last application wasn't approved. You can update your details and apply again.</div>
+  {% endif %}
+  <form method="post" class="form-wide">
+    <div class="mb-3"><label class="form-label" for="org_name">Organization name</label><input class="form-control" id="org_name" name="org_name" value="{{ form.get('org_name', '') }}" maxlength="150" required><div class="form-text">For example, Weston Public Library or a school club.</div></div>
+    <div class="mb-3"><label class="form-label" for="org_contact">Website, email, or phone</label><input class="form-control" id="org_contact" name="org_contact" value="{{ form.get('org_contact', '') }}" maxlength="200" required><div class="form-text">Something we can use to check that you're real.</div></div>
+    <div class="mb-3"><label class="form-label" for="org_description">What does your organization do, and what will volunteers help with?</label><textarea class="form-control" id="org_description" name="org_description" rows="4" required>{{ form.get('org_description', '') }}</textarea></div>
+    <button class="btn btn-primary">Submit application</button>
+  </form>
+{% endif %}
+{% endblock %}

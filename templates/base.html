@@ -17,6 +17,9 @@
       <a class="navbar-brand" href="{{ url_for('opportunities.index') }}">Tandem</a>
       <div class="navbar-nav ms-auto">
         {% if current_user.is_authenticated %}
+          {% if current_user.is_admin %}
+            <a class="nav-link" href="{{ url_for('verification.admin_hosts') }}">Admin</a>
+          {% endif %}
           {% if current_user.is_host %}
             <a class="nav-link" href="{{ url_for('hours.host_dashboard') }}">Dashboard</a>
             <a class="nav-link" href="{{ url_for('opportunities.new') }}">Post event</a>

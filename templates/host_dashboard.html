@@ -1,7 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Host dashboard{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4">Host dashboard</h1>
+<h1 class="h3 mb-3">Host dashboard</h1>
+
+{% if current_user.verification_status == "verified" %}
+  <p class="mb-4"><span class="badge badge-verified">&#10003; Verified</span> <span class="text-muted">{{ current_user.org_name }}</span></p>
+{% elif current_user.verification_status == "pending" %}
+  <div class="alert alert-info mb-4">Your application for <strong>{{ current_user.org_name }}</strong> is under review. You can keep posting events in the meantime.</div>
+{% else %}
+  <div class="alert alert-info mb-4">
+    {% if current_user.verification_status == "rejected" %}Your last application wasn't approved. {% endif %}
+    Want a <strong>&#10003; Verified</strong> tag on your events so volunteers know their hours come from a real organization? Applying is optional, and you can post events without it.
+    <a href="{{ url_for('verification.apply') }}">Apply to get verified</a>
+  </div>
+{% endif %}
 
 <h2 class="h5 mb-3">Hours waiting for approval</h2>
 {% for r in pending %}

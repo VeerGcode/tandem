@@ -5,14 +5,19 @@
   <div>
     <h1 class="h3 mb-1">My hours</h1>
     <p class="lead mb-0">{{ "%.1f"|format(current_user.total_hours()) }} approved hours</p>
+    <p class="text-muted small mb-0">{{ "%.1f"|format(verified_total) }} from verified hosts</p>
   </div>
   <a class="btn btn-outline-primary" href="{{ url_for('hours.export_hours') }}">Download CSV</a>
 </div>
 
 <form method="get" class="search-box mb-4">
   <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="Search by event, place, or status (pending, approved)" aria-label="Search my hours">
+  <div class="form-check mb-0 text-nowrap">
+    <input class="form-check-input" type="checkbox" name="verified" value="1" id="verified-only" {% if verified_only %}checked{% endif %}>
+    <label class="form-check-label" for="verified-only">Verified only</label>
+  </div>
   <button class="btn btn-primary">Search</button>
-  {% if q %}<a class="btn btn-link" href="{{ url_for('hours.my_hours') }}">Clear</a>{% endif %}
+  {% if q or verified_only %}<a class="btn btn-link" href="{{ url_for('hours.my_hours') }}">Clear</a>{% endif %}
 </form>
 
 <div class="table-responsive">
@@ -21,7 +26,7 @@
   <tbody>
   {% for r in requests %}
     <tr>
-      <td>{{ r.opportunity.title }}</td>
+      <td>{{ r.opportunity.title }}{% if r.opportunity.host.is_verified_host %} <span class="badge badge-verified">&#10003; Verified</span>{% endif %}</td>
       <td>{{ r.opportunity.start_time.strftime("%b %d, %Y") }}</td>
       <td>
         {% if r.status == "approved" %}<span class="badge bg-success">Approved</span>
@@ -31,7 +36,7 @@
       <td>{{ ("%g"|format(r.hours)) if r.status == "approved" else "-" }}</td>
     </tr>
   {% else %}
-    <tr><td colspan="4">{% if q %}No hours match your search.{% else %}No hours yet. When you leave an event, open the Scan tab and scan the host's QR code.{% endif %}</td></tr>
+    <tr><td colspan="4">{% if q or verified_only %}No hours match your search.{% else %}No hours yet. When you leave an event, open the Scan tab and scan the host's QR code.{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Host applications{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Host applications</h1>
+
+<h2 class="h5 mb-3">Waiting for review</h2>
+{% for h in pending %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h3 class="h5 mb-1">{{ h.org_name }}</h3>
+      <p class="text-muted small mb-2">{{ h.name }} &middot; {{ h.email }}</p>
+      <p class="mb-1"><span class="text-muted">Contact:</span> {{ h.org_contact }}</p>
+      <p class="mb-3">{{ h.org_description }}</p>
+      <form method="post" class="approve-form">
+        <button class="btn btn-success" formaction="{{ url_for('verification.approve_host', user_id=h.id) }}">Verify</button>
+        <button class="btn btn-outline-danger" formaction="{{ url_for('verification.reject_host', user_id=h.id) }}">Reject</button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <p class="text-muted">No applications waiting.</p>
+{% endfor %}
+
+{% if decided %}
+<h2 class="h5 mt-5 mb-3">Recently reviewed</h2>
+<div class="list-panel">
+  {% for h in decided %}
+    <div class="list-row">
+      <div>
+        <div class="fw-semibold">{{ h.org_name }}</div>
+        <div class="text-muted small">{{ h.name }} &middot; {{ h.email }}</div>
+      </div>
+      <div>{% if h.verification_status == "verified" %}<span class="badge bg-success">Verified</span>{% else %}<span class="badge bg-secondary">Rejected</span>{% endif %}</div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -8,12 +8,18 @@
 
 <form method="get" class="search-box mb-4">
   <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="Search by title, place, or description" aria-label="Search opportunities">
-  <div class="form-check mb-0 text-nowrap">
-    <input class="form-check-input" type="checkbox" name="urgent" value="1" id="urgent-only" {% if urgent_only %}checked{% endif %}>
-    <label class="form-check-label" for="urgent-only">Urgent only</label>
+  <div class="d-flex flex-wrap gap-3">
+    <div class="form-check mb-0 text-nowrap">
+      <input class="form-check-input" type="checkbox" name="urgent" value="1" id="urgent-only" {% if urgent_only %}checked{% endif %}>
+      <label class="form-check-label" for="urgent-only">Urgent only</label>
+    </div>
+    <div class="form-check mb-0 text-nowrap">
+      <input class="form-check-input" type="checkbox" name="verified" value="1" id="verified-only" {% if verified_only %}checked{% endif %}>
+      <label class="form-check-label" for="verified-only">Verified only</label>
+    </div>
   </div>
   <button class="btn btn-primary">Search</button>
-  {% if q or urgent_only %}<a class="btn btn-link" href="{{ url_for('opportunities.index') }}">Clear</a>{% endif %}
+  {% if q or urgent_only or verified_only %}<a class="btn btn-link" href="{{ url_for('opportunities.index') }}">Clear</a>{% endif %}
 </form>
 
 {% for opp in opportunities %}
@@ -23,15 +29,17 @@
         <h2 class="h5 mb-1">{{ opp.title }}</h2>
         <div class="text-nowrap">
           {% if opp.id in signed_up_ids %}<span class="badge bg-success">Signed up</span>{% endif %}
+          {% if opp.host.is_verified_host %}<span class="badge badge-verified">&#10003; Verified</span>{% endif %}
           {% if opp.is_urgent %}<span class="badge bg-danger">Urgent</span>{% endif %}
         </div>
       </div>
+      <p class="text-muted small mb-1">{{ opp.host.org_name or opp.host.name }}</p>
       <p class="mb-1">{{ opp.location }}</p>
       <p class="text-muted mb-0">{{ opp.start_time.strftime("%a %b %d, %I:%M %p") }} &middot; {{ opp.signups|length }} of {{ opp.spots_needed }} spots filled</p>
     </div>
   </a>
 {% else %}
-  {% if q or urgent_only %}
+  {% if q or urgent_only or verified_only %}
     <p class="text-center text-muted">No opportunities match your search.</p>
   {% else %}
     <p class="text-center text-muted">No upcoming opportunities yet.{% if current_user.is_authenticated and current_user.is_host %} <a href="{{ url_for('opportunities.new') }}">Post the first one.</a>{% endif %}</p>
